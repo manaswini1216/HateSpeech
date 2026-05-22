@@ -1,15 +1,29 @@
+import os
 import pickle
 import re
 import nltk
+
 from nltk.corpus import stopwords
 from neutralizer import neutralize_text
+
+# ---------------- BASE DIRECTORY ---------------- #
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ---------------- LOAD FILES ---------------- #
 
-model = pickle.load(open(r"c:\Users\Manaswini\Downloads\project\hate_speech\backend\hate_speech_model.pkl", "rb"))
+model_path = os.path.join(BASE_DIR, "hate_speech_model.pkl")
+vectorizer_path = os.path.join(BASE_DIR, "tfidf_vectorizer.pkl")
+toxic_words_path = os.path.join(BASE_DIR, "toxic_words.pkl")
 
-vectorizer = pickle.load(open(r"c:\Users\Manaswini\Downloads\project\hate_speech\backend\tfidf_vectorizer.pkl", "rb"))
+with open(model_path, "rb") as file:
+    model = pickle.load(file)
 
-toxic_words = pickle.load(open(r"c:\Users\Manaswini\Downloads\project\hate_speech\backend\toxic_words.pkl", "rb"))
+with open(vectorizer_path, "rb") as file:
+    vectorizer = pickle.load(file)
+
+with open(toxic_words_path, "rb") as file:
+    toxic_words = pickle.load(file)
 
 # ---------------- CLEAN TOXIC WORDS ---------------- #
 
@@ -26,9 +40,15 @@ toxic_words = cleaned_toxic_words
 
 # ---------------- NLTK ---------------- #
 
-nltk.download('punkt')
-nltk.download('punkt_tab')
-nltk.download('stopwords')
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
 
 stop_words = set(stopwords.words('english'))
 stop_words.add("rt")
@@ -77,7 +97,10 @@ def remove_stopwords(raw_text):
 
     tokenize = nltk.word_tokenize(raw_text)
 
-    text = [word for word in tokenize if word.lower() not in stop_words]
+    text = [
+        word for word in tokenize
+        if word.lower() not in stop_words
+    ]
 
     text = " ".join(text)
 
@@ -137,7 +160,8 @@ def get_severity(prediction):
 
     return "Low"
 
-# ---------------- MAIN PREDICTION FUNCTION ---------------- #
+# ---------------- EXPLANATION ---------------- #
+
 def generate_explanation(prediction, toxic_words):
 
     if prediction == "Neutral":
@@ -150,6 +174,9 @@ def generate_explanation(prediction, toxic_words):
         return f"Flagged due to potentially toxic words: {toxic_text}"
 
     return "Text classified as potentially harmful by ML model."
+
+# ---------------- MAIN PREDICTION FUNCTION ---------------- #
+
 def predict_text(text):
 
     cleaned_text = preprocess_text(text)
@@ -163,26 +190,32 @@ def predict_text(text):
     confidence = round(float(max(probabilities)) * 100, 2)
 
     prediction_label = label_map[prediction]
-    neutralized_text = None
-
-    if prediction_label != "Neutral":
-
-      neutralized_text = neutralize_text(text)
 
     severity = get_severity(prediction_label)
 
     toxic_matches = extract_toxic_words(text)
+
     explanation = generate_explanation(
-    prediction_label,
-    toxic_matches
-)
+        prediction_label,
+        toxic_matches
+    )
+
+    neutralized_text = None
+
+    if prediction_label != "Neutral":
+
+        try:
+            neutralized_text = neutralize_text(text)
+
+        except Exception:
+            neutralized_text = "Neutralization unavailable."
 
     result = {
-        "prediction": prediction_label,
-        "confidence": confidence,
-        "severity": severity,
-        "toxic_words": toxic_matches,
-        "explanation": explanation,
+        "prediction": str(prediction_label),
+        "confidence": float(confidence),
+        "severity": str(severity),
+        "toxic_words": list(toxic_matches),
+        "explanation": str(explanation),
         "neutralized_text": neutralized_text
     }
 
