@@ -1,5 +1,5 @@
 import streamlit as st
-import requests
+from predictor import predict_text
 
 # ---------------- PAGE CONFIG ---------------- #
 
@@ -14,7 +14,11 @@ st.set_page_config(
 st.title("🛡️ Hate Speech Detection System")
 
 st.markdown(
-    "Detect hate speech, offensive language, severity level, and generate neutralized text using ML + GenAI."
+    """
+Detect hate speech, offensive language,
+severity level, and generate neutralized
+text using ML + GenAI.
+"""
 )
 
 # ---------------- INPUT ---------------- #
@@ -35,17 +39,9 @@ if st.button("Analyze Text"):
 
     else:
 
-        url = "http://127.0.0.1:8000/predict"
-
-        payload = {
-            "text": text
-        }
-
         with st.spinner("Analyzing..."):
 
-            response = requests.post(url, json=payload)
-
-            result = response.json()
+            result = predict_text(text)
 
         # ---------------- RESULTS ---------------- #
 
@@ -60,39 +56,58 @@ if st.button("Analyze Text"):
         explanation = result.get("explanation")
         neutralized = result.get("neutralized_text")
 
-        # prediction color
+        # ---------------- PREDICTION ---------------- #
+
         if prediction == "Hate Speech":
+
             st.error(f"Prediction: {prediction}")
 
         elif prediction == "Offensive Language":
+
             st.warning(f"Prediction: {prediction}")
 
         else:
+
             st.success(f"Prediction: {prediction}")
 
-        # metrics
+        # ---------------- METRICS ---------------- #
+
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Confidence", f"{confidence}%")
+
+            st.metric(
+                "Confidence",
+                f"{confidence}%"
+            )
 
         with col2:
-            st.metric("Severity", severity)
 
-        # toxic words
+            st.metric(
+                "Severity",
+                severity
+            )
+
+        # ---------------- TOXIC WORDS ---------------- #
+
         st.subheader("🚨 Toxic Words")
 
         if toxic_words:
+
             st.write(", ".join(toxic_words))
+
         else:
+
             st.write("No toxic words detected.")
 
-        # explanation
+        # ---------------- EXPLANATION ---------------- #
+
         st.subheader("🧠 Explanation")
 
         st.info(explanation)
 
-        # neutralized text
+        # ---------------- NEUTRALIZED TEXT ---------------- #
+
         if neutralized:
 
             st.subheader("🤖 Neutralized Text")
