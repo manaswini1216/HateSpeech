@@ -1,6 +1,9 @@
+import streamlit as st
 from google import genai
 
-client = genai.Client(api_key="AIzaSyDJ4BITIcCnTNF4_OCp8rtwiBvYJvxvjaU")
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"]
+)
 cache = {}
 def neutralize_text(text):
 
