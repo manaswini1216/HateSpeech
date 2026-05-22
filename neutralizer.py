@@ -1,34 +1,46 @@
 import streamlit as st
 from google import genai
 
+# ---------------- GEMINI CLIENT ---------------- #
+
 client = genai.Client(
     api_key=st.secrets["GEMINI_API_KEY"]
 )
+
+# ---------------- SIMPLE CACHE ---------------- #
+
 cache = {}
+
+# ---------------- NEUTRALIZER FUNCTION ---------------- #
+
 def neutralize_text(text):
 
-    # return cached response
+    # return cached result if already generated
     if text in cache:
         return cache[text]
 
     try:
 
         prompt = f"""
-        Rewrite this text in a respectful and non-toxic way
-        without changing the meaning.
+Rewrite this text in a respectful and non-toxic way
+without changing the original meaning.
 
-        Text:
-        {text}
-        """
+Text:
+{text}
+"""
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
 
-        neutralized = response.text
+        neutralized = response.text.strip()
 
-        # store in cache
+        # fallback if empty response
+        if not neutralized:
+            neutralized = "Neutralized version unavailable."
+
+        # save in cache
         cache[text] = neutralized
 
         return neutralized
@@ -37,12 +49,14 @@ def neutralize_text(text):
 
         print("Gemini Error:", e)
 
-        return text
+        return "Neutralization service unavailable."
+
+# ---------------- TEST ---------------- #
 
 if __name__ == "__main__":
 
-    text = "You are a stupid useless person"
+    sample_text = "You are a stupid useless person"
 
-    output = neutralize_text(text)
+    result = neutralize_text(sample_text)
 
-    print(output)
+    print(result)
