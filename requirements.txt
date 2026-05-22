@@ -1,7 +1,6 @@
-fastapi
-uvicorn
-scikit-learn
-nltk
+streamlit
 numpy
-pydantic
+scikit-learn
+scipy
+nltk
 google-genai
